@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>دفتر التنقيط الرقمي - النسخة الملكية</title>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;500;700;900&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --primary: #1a2a6c;
+            --accent: #b21f1f;
+            --gold: #fdbb2d;
+            --success: #27ae60;
+            --danger: #e74c3c;
+            --bg: #f0f2f5;
+        }
+
+        * { box-sizing: border-box; font-family: 'Tajawal', sans-serif; }
+        body { background: var(--bg); margin: 0; padding: 10px; color: #333; }
+
+        .info-btn { position: fixed; top: 20px; left: 20px; background: var(--gold); color: #000; padding: 10px 15px; border-radius: 50px; cursor: pointer; font-weight: bold; border: none; box-shadow: 0 4px 10px rgba(0,0,0,0.2); z-index: 999; }
+
+        .container { max-width: 1400px; margin: 0 auto; }
+        header { text-align: center; padding: 25px; background: linear-gradient(135deg, var(--primary), var(--accent)); color: white; border-radius: 15px; margin-bottom: 20px; }
+
+        .trimester-nav { display: flex; justify-content: center; gap: 10px; margin-bottom: 20px; }
+        .tri-btn { padding: 12px 25px; border: none; border-radius: 30px; cursor: pointer; background: #fff; font-weight: bold; transition: 0.3s; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .tri-btn.active { background: var(--gold); color: #000; transform: translateY(-3px); }
+
+        .controls { background: white; padding: 20px; border-radius: 15px; margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+        input[type="text"] { flex: 1; min-width: 250px; padding: 12px; border: 2px solid #eee; border-radius: 8px; outline: none; }
+        
+        .btn { padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: white; display: flex; align-items: center; gap: 5px; transition: 0.2s; }
+        .btn-add { background: var(--success); }
+        .btn-copy { background: var(--primary); }
+        .btn-export { background: #1d6f42; }
+        .btn-print { background: #8e44ad; }
+
+        .class-section { background: white; border-radius: 15px; padding: 20px; margin-bottom: 40px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); overflow-x: auto; position: relative; }
+        .class-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-right: 6px solid var(--gold); padding-right: 15px; }
+
+        table { width: 100%; border-collapse: collapse; margin-bottom: 20px; min-width: 1100px; }
+        th { background: #f8f9fa; color: var(--primary); padding: 12px 5px; border: 1px solid #ddd; font-size: 0.85rem; }
+        td { border: 1px solid #eee; padding: 6px; text-align: center; }
+        
+        .input-num { width: 45px; padding: 6px; text-align: center; border: 1px solid #ddd; border-radius: 4px; font-weight: bold; }
+        .input-name { width: 170px; text-align: right; border: 1px solid transparent; background: transparent; font-weight: 700; color: var(--primary); }
+
+        .avg-cell { font-weight: 900; color: var(--accent); background: #fff5f5 !important; }
+        .total-eval { font-weight: bold; background: #f0fdf4 !important; color: var(--success); }
+
+        /* الأقسام التحليلية */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 20px; background: #fafafa; padding: 15px; border-radius: 12px; border: 1px solid #eee; }
+        .stat-item { background: white; padding: 10px; border-radius: 8px; text-align: center; border-bottom: 3px solid #ddd; }
+        .stat-item b { font-size: 1.1rem; color: var(--primary); }
+
+        /* ميزة ملاحظة الأستاذ */
+        .teacher-note { margin-top: 20px; }
+        .teacher-note textarea { width: 100%; height: 80px; padding: 15px; border-radius: 10px; border: 2px dashed var(--gold); background: #fffdf5; outline: none; font-size: 0.95rem; resize: none; }
+
+        /* تقرير الثلاثي الشامل */
+        .summary-report { background: linear-gradient(135deg, #2c3e50, #000); color: white; padding: 30px; border-radius: 15px; margin-top: 50px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; align-items: center; justify-content: center; }
+        .modal-content { background: white; padding: 30px; border-radius: 15px; text-align: center; max-width: 500px; animation: pop 0.3s ease; }
+        @keyframes pop { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        @media print {
+            @page { size: A4 landscape; margin: 1cm; }
+            body { background: white; padding: 0; }
+            .no-print, .info-btn, .controls, .trimester-nav, .btn, .modal-overlay, th:last-child, td:last-child { display: none !important; }
+            .class-section { border: 1px solid #000; box-shadow: none; page-break-after: always; }
+            .teacher-note textarea { border: 1px solid #000; background: white; height: auto; min-height: 100px; }
+            .summary-report { color: black; background: white; border: 2px solid #000; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+<button class="info-btn no-print" onclick="toggleAbout(true)">ℹ️ حول النظام</button>
+
+<div id="about-modal" class="modal-overlay">
+    <div class="modal-content" style="text-align: right;">
+        <h2 style="color: var(--primary);">مميزات النسخة الملكية</h2>
+        <ul>
+            <li><b>ترتيب آلي:</b> يتم ترتيب تلاميذ القسم أبجدياً تلقائياً عند إضافة أي اسم.</li>
+            <li><b>مذكرة الأستاذ:</b> خانة خاصة أسفل كل قسم لكتابة الملاحظات التربوية.</li>
+            <li><b>تحليل الثلاثي:</b> تقرير ذكي يجمع إحصائيات كل الأقسام في لوحة واحدة بنهاية الصفحة.</li>
+            <li><b>تصدير ذكي:</b> ملف Excel متوافق تماماً مع اللغة العربية واتجاه اليمين.</li>
+        </ul>
+        <button class="btn btn-copy" style="margin: 0 auto;" onclick="toggleAbout(false)">إغلاق</button>
+    </div>
+</div>
+
+<div id="custom-alert" class="modal-overlay">
+    <div class="modal-content">
+        <h3 id="modal-title">تنبيه</h3>
+        <p id="modal-body"></p>
+        <div style="display: flex; justify-content: center; gap: 10px; margin-top: 20px;" id="modal-btns"></div>
+    </div>
+</div>
+
+<div class="container">
+    <header>
+        <h1>دفتر التنقيط الرقمي للأستاذ</h1>
+        <div id="tri-title" style="font-weight: 900; font-size: 1.2rem; color: var(--gold);">الثلاثي الأول</div>
+    </header>
+
+    <div class="trimester-nav no-print">
+        <button class="tri-btn active" id="btn-tri-1" onclick="switchTri(1)">الثلاثي الأول</button>
+        <button class="tri-btn" id="btn-tri-2" onclick="switchTri(2)">الثلاثي الثاني</button>
+        <button class="tri-btn" id="btn-tri-3" onclick="switchTri(3)">الثلاثي الثالث</button>
+    </div>
+
+    <div class="controls no-print">
+        <input type="text" id="clsName" placeholder="إضافة قسم جديد (مثلاً: 3 متوسط 1)...">
+        <button class="btn btn-add" onclick="addClass()">+ إضافة القسم</button>
+        <button class="btn btn-copy" onclick="confirmCopy()">نسخ الهيكل للفصل القادم</button>
+    </div>
+
+    <div id="mainContent"></div>
+    <div id="summaryContent"></div>
+</div>
+
+<script>
+    let currentTri = 1;
+    let data = JSON.parse(localStorage.getItem('teacher_royal_v6')) || { 1: [], 2: [], 3: [] };
+
+    function toggleAbout(s) { document.getElementById('about-modal').style.display = s ? 'flex' : 'none'; }
+
+    function showAlert(title, text, type='info', onConfirm=null) {
+        const modal = document.getElementById('custom-alert');
+        document.getElementById('modal-title').innerText = title;
+        document.getElementById('modal-body').innerText = text;
+        const btns = document.getElementById('modal-btns');
+        btns.innerHTML = '';
+        if(onConfirm) {
+            const b1 = document.createElement('button'); b1.className='btn btn-copy'; b1.innerText='تأكيد'; b1.onclick=()=>{onConfirm(); modal.style.display='none';};
+            btns.append(b1);
+            const b2 = document.createElement('button'); b2.className='btn'; b2.style.background='#999'; b2.innerText='إلغاء'; b2.onclick=()=>modal.style.display='none';
+            btns.append(b2);
+        } else {
+            const b = document.createElement('button'); b.className='btn btn-add'; b.innerText='حسناً'; b.onclick=()=>modal.style.display='none';
+            btns.append(b);
+        }
+        modal.style.display = 'flex';
+    }
+
+    function switchTri(t) {
+        currentTri = t;
+        document.querySelectorAll('.tri-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`btn-tri-${t}`).classList.add('active');
+        document.getElementById('tri-title').innerText = t === 1 ? "الثلاثي الأول" : (t === 2 ? "الثلاثي الثاني" : "الثلاثي الثالث");
+        render();
+    }
+
+    function addClass() {
+        const name = document.getElementById('clsName').value;
+        if(!name) return showAlert("تنبيه", "أدخل اسم القسم");
+        data[currentTri].push({ name: name, note: "", students: [] });
+        save(); render();
+        document.getElementById('clsName').value = '';
+    }
+
+    function addStudent(cIdx) {
+        data[currentTri][cIdx].students.push({ name: "تلميذ جديد", beh:0, part:0, quiz:0, disp:0, extra:0, assig:0, exam:0 });
+        sortStudents(cIdx);
+        save(); render();
+    }
+
+    function sortStudents(cIdx) {
+        data[currentTri][cIdx].students.sort((a, b) => a.name.localeCompare(b.name, 'ar'));
+    }
+
+    function updateVal(cIdx, sIdx, key, val) {
+        let cls = data[currentTri][cIdx];
+        cls.students[sIdx][key] = key === 'name' ? val : (parseFloat(val) || 0);
+        
+        if(key === 'name') sortStudents(cIdx); // إعادة الترتيب عند تغيير الاسم
+        
+        save();
+        render(); // التحديث الكامل ضروري للحفاظ على الترتيب الأبجدي في العرض
+    }
+
+    function updateNote(cIdx, val) {
+        data[currentTri][cIdx].note = val;
+        save();
+    }
+
+    function calc(s) {
+        const sum = (s.beh||0) + (s.part||0) + (s.quiz||0) + (s.disp||0) + (s.extra||0);
+        const avg = ((sum + (s.assig||0) + ((s.exam||0) * 2)) / 4).toFixed(2);
+        let app = "", adv = "";
+        if (avg < 7) { app = "غير مرضٍ"; adv = "احذر التهاون"; }
+        else if (avg < 10) { app = "دون الوسط"; adv = "ينقصك الحرص"; }
+        else if (avg < 12) { app = "مقبول"; adv = "بمقدورك التحسن"; }
+        else if (avg < 14) { app = "مرضٍ"; adv = "واصل العمل"; }
+        else if (avg < 15) { app = "جيد"; adv = "واصل الاجتهاد"; }
+        else if (avg < 17) { app = "جيد جداً"; adv = "نتائج مشجعة"; }
+        else { app = "ممتاز"; adv = "واصل تميزك"; }
+        return { sum, avg, app, adv };
+    }
+
+    function save() { localStorage.setItem('teacher_royal_v6', JSON.stringify(data)); }
+
+    function render() {
+        const cont = document.getElementById('mainContent'); cont.innerHTML = '';
+        let totalPassAll = 0, totalStudentsAll = 0, allAvgs = [];
+
+        data[currentTri].forEach((cls, cIdx) => {
+            let rows = cls.students.map((s, sIdx) => {
+                const r = calc(s);
+                return `<tr id="tr-${cIdx}-${sIdx}">
+                    <td>${sIdx+1}</td>
+                    <td><input type="text" class="input-name" value="${s.name}" onchange="updateVal(${cIdx}, ${sIdx}, 'name', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.beh}" oninput="updateVal(${cIdx}, ${sIdx}, 'beh', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.part}" oninput="updateVal(${cIdx}, ${sIdx}, 'part', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.quiz}" oninput="updateVal(${cIdx}, ${sIdx}, 'quiz', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.disp}" oninput="updateVal(${cIdx}, ${sIdx}, 'disp', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.extra}" oninput="updateVal(${cIdx}, ${sIdx}, 'extra', this.value)"></td>
+                    <td class="total-eval sum-box">${r.sum}</td>
+                    <td><input type="number" class="input-num" value="${s.assig}" oninput="updateVal(${cIdx}, ${sIdx}, 'assig', this.value)"></td>
+                    <td><input type="number" class="input-num" value="${s.exam}" oninput="updateVal(${cIdx}, ${sIdx}, 'exam', this.value)"></td>
+                    <td class="avg-cell avg-box">${r.avg}</td>
+                    <td class="app-box" style="font-size:0.8rem">${r.app}</td>
+                    <td class="adv-box" style="font-size:0.8rem">${r.adv}</td>
+                    <td class="no-print"><button onclick="confirmDelStud(${cIdx}, ${sIdx})" style="border:none; background:none; color:red; cursor:pointer">×</button></td>
+                </tr>`;
+            }).join('');
+
+            cont.innerHTML += `
+                <div class="class-section">
+                    <div class="class-title">
+                        <h2>قسم: ${cls.name}</h2>
+                        <div class="no-print" style="display:flex; gap:8px;">
+                            <button class="btn btn-add" onclick="addStudent(${cIdx})">+ تلميذ</button>
+                            <button class="btn btn-export" onclick="exportExcel(${cIdx})">Excel</button>
+                            <button class="btn btn-print" onclick="window.print()">طباعة A4</button>
+                            <button class="btn" style="background:var(--danger)" onclick="confirmDelCls(${cIdx})">حذف</button>
+                        </div>
+                    </div>
+                    <table>
+                        <thead>
+                            <tr><th>#</th><th>الاسم واللقب</th><th>سلوك</th><th>مشار.</th><th>استج.</th><th>انضب.</th><th>+/-</th><th>م.تقويم</th><th>الفرض</th><th>الاختبار</th><th>المعدل</th><th>التقدير</th><th>الإرشادات</th><th class="no-print">×</th></tr>
+                        </thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    <div class="stats-grid" id="stats-ui-${cIdx}"></div>
+                    <div class="teacher-note">
+                        <label style="font-weight:bold; color:var(--primary)">📝 رأي وملاحظات الأستاذ حول القسم:</label>
+                        <textarea placeholder="اكتب رأيك التربوي هنا..." onchange="updateNote(${cIdx}, this.value)">${cls.note || ""}</textarea>
+                    </div>
+                </div>
+            `;
+            updateStats(cIdx);
+        });
+        renderSummary();
+    }
+
+    function updateStats(cIdx) {
+        const cls = data[currentTri][cIdx];
+        if(!cls || !cls.students.length) return;
+        const avgs = cls.students.map(s => parseFloat(calc(s).avg));
+        const exams = cls.students.map(s => s.exam || 0);
+        const pass = avgs.filter(a => a >= 10).length;
+        document.getElementById(`stats-ui-${cIdx}`).innerHTML = `
+            <div class="stat-item"><small>التعداد</small><b>${avgs.length}</b></div>
+            <div class="stat-item"><small>معدل القسم</small><b>${(avgs.reduce((a,b)=>a+b,0)/avgs.length).toFixed(2)}</b></div>
+            <div class="stat-item"><small>أعلى اختبار</small><b>${Math.max(...exams)}</b></div>
+            <div class="stat-item"><small>أدنى اختبار</small><b>${Math.min(...exams)}</b></div>
+            <div class="stat-item"><small>أعلى معدل</small><b>${Math.max(...avgs)}</b></div>
+            <div class="stat-item"><small>أدنى معدل</small><b>${Math.min(...avgs)}</b></div>
+            <div class="stat-item"><small>ناجحون</small><b style="color:green">${pass} (${((pass/avgs.length)*100).toFixed(1)}%)</b></div>
+            <div class="stat-item"><small>راسبون</small><b style="color:red">${avgs.length - pass} (${(((avgs.length-pass)/avgs.length)*100).toFixed(1)}%)</b></div>
+        `;
+    }
+
+    function renderSummary() {
+        const sumCont = document.getElementById('summaryContent');
+        const classes = data[currentTri];
+        if(classes.length === 0) { sumCont.innerHTML = ""; return; }
+
+        let allStudents = 0, allPass = 0, allAvgs = [];
+        classes.forEach(cls => {
+            allStudents += cls.students.length;
+            cls.students.forEach(s => {
+                const r = calc(s);
+                allAvgs.push(parseFloat(r.avg));
+                if(parseFloat(r.avg) >= 10) allPass++;
+            });
+        });
+
+        const globalAvg = allAvgs.length ? (allAvgs.reduce((a,b)=>a+b,0)/allAvgs.length).toFixed(2) : 0;
+        const globalPercent = allStudents ? ((allPass/allStudents)*100).toFixed(1) : 0;
+
+        sumCont.innerHTML = `
+            <div class="summary-report">
+                <h2 style="color:var(--gold); border-bottom:1px solid #444; padding-bottom:10px;">📊 التقرير التحليلي الإجمالي للثلاثي</h2>
+                <div class="stats-grid" style="background:transparent; border:none;">
+                    <div class="stat-item"><b>${classes.length}</b><small>إجمالي الأقسام</small></div>
+                    <div class="stat-item"><b>${allStudents}</b><small>إجمالي التلاميذ</small></div>
+                    <div class="stat-item"><b>${globalAvg}</b><small>المعدل العام للمادة</small></div>
+                    <div class="stat-item"><b>${allPass}</b><small>إجمالي الناجحين</small></div>
+                    <div class="stat-item" style="border-bottom-color:var(--gold)"><b>${globalPercent}%</b><small>نسبة النجاح العامة</small></div>
+                </div>
+            </div>
+        `;
+    }
+
+    function confirmDelStud(c, s) { showAlert("حذف", "هل أنت متأكد من حذف هذا التلميذ؟", "danger", () => { data[currentTri][c].students.splice(s,1); save(); render(); }); }
+    function confirmDelCls(c) { showAlert("حذف", "سيتم مسح القسم بكل بياناته، هل أنت متأكد؟", "danger", () => { data[currentTri].splice(c,1); save(); render(); }); }
+
+    function confirmCopy() {
+        if(currentTri === 3) return showAlert("تنبيه", "أنت في نهاية السنة الدراسية");
+        showAlert("نسخ الهيكل", "هل تريد نقل الأقسام والأسماء للثلاثي القادم؟", "info", () => {
+            data[currentTri].forEach(cls => {
+                data[currentTri+1].push({ name: cls.name, note: "", students: cls.students.map(s => ({ name: s.name, beh:0, part:0, quiz:0, disp:0, extra:0, assig:0, exam:0 })) });
+            });
+            save(); showAlert("نجاح", "تم النسخ، انتقل للثلاثي التالي");
+        });
+    }
+
+    function exportExcel(cIdx) {
+        const cls = data[currentTri][cIdx];
+        const rows = cls.students.map((s, i) => {
+            const r = calc(s);
+            return {
+                "#": i + 1, "الاسم واللقب": s.name, "سلوك": s.beh, "مشاركة": s.part, "استجواب": s.quiz, "انضباط": s.disp, "+/-": s.extra, "م.تقويم": r.sum, "الفرض": s.assig, "الاختبار": s.exam, "المعدل": r.avg, "التقدير": r.app, "الإرشادات": r.adv
+            };
+        });
+        const ws = XLSX.utils.json_to_sheet(rows);
+        if(!ws['!views']) ws['!views'] = []; ws['!views'].push({RTL: true});
+        const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, ws, "النتائج");
+        XLSX.writeFile(wb, `نتائج_${cls.name}_الثلاثي_${currentTri}.xlsx`);
+    }
+
+    render();
+</script>
+</body>
+</html>
